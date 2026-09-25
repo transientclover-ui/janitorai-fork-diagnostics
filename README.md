@@ -1,27 +1,108 @@
 # JanitorAI Fork Diagnostics
 
-Privacy-first beta userscript for recent Fork destinations and local diagnostics. MIT licensed; independent community project, not affiliated with JanitorAI.
+JanitorAI Fork Diagnostics is an open-source, volunteer-assisted investigation into problems with JanitorAI's native Fork functionality.
 
-## Install
+The current beta collects local diagnostic information about Fork attempts for which a new destination was observed and attempts whose outcome remained indeterminate. Volunteers may choose to contribute sanitized diagnostic reports to help identify recurring failure patterns.
 
-1. Install a userscript manager such as Violentmonkey or Tampermonkey.
-2. Open the raw `dist/janitorai-fork-diagnostics.user.js` file from this repository and install it in the manager (or import the local file).
-3. Open a JanitorAI chat. Select the site's native **Fork** / **Fork into new chat** control. Open the small **Fork history** button in the lower right.
+Our long-term goal is to use this evidence to investigate and develop a reliable Fork troubleshooting and repair tool. **This beta does not currently repair failed Fork attempts.**
 
-This script observes the site's Fork action; it never performs a fork. A destination appears when a distinct `/chats/<numeric ID>` URL is observed within 45 seconds. If the site opens a new tab, keeps the same URL, uses a different button label, or completes after the window, the attempt remains unknown. A destination observation is a navigation correlation, not proof that the server copied every message. A click with no observed destination is **not** counted as a failure.
+This is an independent, MIT-licensed community project and is not affiliated with JanitorAI.
 
-## Privacy
+## Install from GitHub
 
-Data stays in this browser's localStorage under separate keys: `nfi:history:v1` holds clickable, canonical chat URLs; `nfi:diagnostics:v1` holds only timestamp, outcome, signal, elapsed time, and an internal correlation ID. Export and copy use a fixed allowlist that omits IDs and URLs. Reports never contain chat content, credentials, cookies, tokens, character definitions, or source/destination chat IDs. The script does not read messages or make network requests. URLs can still expose private chats to someone with access to this browser profile; use **Delete local data** to remove history and diagnostics. Choose retention (7/30/90/365 days and 25/100/250 entries). Browser data deletion also removes this data. This beta does not collect prior forks automatically.
+1. Install a userscript manager such as [Violentmonkey](https://violentmonkey.github.io/) or [Tampermonkey](https://www.tampermonkey.net/).
+2. Open the [raw beta userscript](https://raw.githubusercontent.com/transientclover-ui/janitorai-fork-diagnostics/main/dist/janitorai-fork-diagnostics.user.js).
+3. Confirm the installation in your userscript manager.
+4. Open a JanitorAI chat and use JanitorAI's native **Fork** or **Fork into new chat** control normally.
+
+The script observes native Fork activity; it never performs or repairs a fork.
+
+## Volunteer participation
+
+After using Fork normally, open the **Fork history** button in the lower-right corner:
+
+- **Recent destinations (private)** lists locally observed destination chats as clickable links.
+- **Diagnostics and settings** shows human-readable summaries and inspectable technical records.
+- The summary counts attempts, observed destinations, and indeterminate outcomes.
+- **Copy report** copies a sanitized JSON report to the clipboard.
+- **Export report** downloads the same report as `nfi-diagnostics.json`.
+- Retention controls keep 7, 30, 90, or 365 days and up to 25, 100, or 250 entries.
+- **Delete local data** removes saved Fork history and diagnostics from the browser after confirmation.
+
+To contribute:
+
+1. Review the diagnostic summaries and inspect the exported JSON yourself.
+2. Remove anything you do not want to share.
+3. Open a [GitHub Issue](https://github.com/transientclover-ui/janitorai-fork-diagnostics/issues) describing what you did, what JanitorAI displayed, whether navigation occurred in the same tab or a new tab, and the approximate time.
+4. Attach or paste the sanitized report only if you voluntarily choose to share it.
+
+Do not submit private chat URLs, chat text, character definitions, credentials, cookies, authentication tokens, or unredacted network logs. Installing the script does **not** transmit diagnostic information. Sharing is always optional and requires a separate action by the volunteer.
+
+## What the beta observes
+
+A Fork attempt begins when the script observes a click on a native control whose accessible label matches the known Fork labels. A destination is recorded when a distinct canonical `/chats/<numeric ID>` URL is observed within 45 seconds.
+
+If JanitorAI opens a new tab, keeps the same URL, uses a different button label, or completes after that window, the attempt remains indeterminate. A destination observation is a navigation correlation, not proof that the server copied every message. A click with no observed destination is **not** classified as a confirmed failure.
+
+The script passively observes clicks and same-tab navigation. It does not intercept fetch/XHR, inspect server responses, read JanitorAI page or account state, or assume a private API endpoint.
+
+## Privacy and report contents
+
+Data remains in this browser's localStorage unless the volunteer explicitly copies or exports a report:
+
+- `nfi:history:v1` stores clickable canonical destination URLs and internal correlation IDs for the private history view.
+- `nfi:diagnostics:v1` stores timestamps, outcomes, signal names, elapsed times, and internal correlation IDs.
+- `nfi:settings:v1` stores the selected retention period and entry limit.
+
+Private Fork URLs are kept separate from shareable reports. The current report generator uses a fixed allowlist. Exported and copied reports contain:
+
+- project name and report schema version
+- report generation time
+- aggregate attempt, observed-destination, and indeterminate counts
+- per-attempt schema version, timestamp, outcome, signal, and elapsed time
+
+The export omits internal correlation IDs and all source and destination URLs. Automated tests verify that private URL components and internal IDs are excluded from the generated report.
+
+The script does not read or collect chat messages, character definitions, credentials, cookies, or authentication tokens, and it makes no network requests. URLs in private local history can still expose chats to someone with access to the same browser profile. Use **Delete local data** or browser data deletion to remove them.
+
+Always inspect a report before voluntarily sharing it. The sanitization guarantee applies to reports generated by the current checked-in export code, not manually copied browser storage, console output, screenshots, or network logs.
+
+## Roadmap
+
+These phases are development goals, not promises of future functionality:
+
+1. **Observe:** Study native Fork behavior and collect conservative local diagnostics.
+2. **Compare:** Review voluntary reports and identify recurring failure patterns.
+3. **Investigate:** Evaluate technically feasible troubleshooting and recovery approaches.
+4. **Develop and validate:** Add repair functionality only where supported by evidence and testing.
 
 ## Development
 
-Node 20+: `npm test` and `npm run build`. Edit `src/core.js` and `src/app.js`, then commit the generated `dist/*.user.js`. No runtime dependencies or build packages.
+Requires Node.js 20 or newer. There are no runtime dependencies or build packages.
 
-## Investigation and limits
+```sh
+npm test
+npm run build
+```
 
-The public site could not be inspected directly in this environment: its browser security policy blocked access. Public examples show numeric `/chats/<id>` links and community reports describe “Fork into new chat” as opening a branch. Neither establishes the private request endpoint, response schema, precise button markup, or failure behavior. This beta does not intercept fetch/XHR, responses, cookies, or page state. No endpoint is assumed. A userscript can observe clicks and same-tab URL changes without reading chat data; it cannot infer a confirmed server failure from silence. The existing browser policy prevented an authenticated end-to-end fork, so native button matching and destination capture need live validation on JanitorAI. If the UI differs, file a sanitized issue with only the button's visible label and whether same-tab navigation occurred. Do not attach private URLs or network logs.
+Edit the modular files in `src/core.js` and `src/app.js`. The build script combines them with the userscript metadata header and writes `dist/janitorai-fork-diagnostics.user.js`; commit the generated userscript with source changes.
 
-## Planned, not implemented
+The tests currently verify:
 
-A future GitHub Pages community dashboard could plot aggregated fork outcomes and outage trends. Any community diagnostic collection must be explicit opt-in, offer a report preview and per-submission consent, publish a schema and retention policy, and audit aggregation so private URLs and identifiers never leave the browser. Outage graphs would require independently validated signals and sufficient samples; unknown outcomes cannot be called outages. This beta sends no telemetry.
+- only canonical HTTPS JanitorAI chat destinations are accepted
+- query strings and fragments are removed from private destination URLs
+- reports exclude private URLs and internal identifiers
+- retention prunes both diagnostic and private-history stores
+- deletion clears both diagnostic and private-history stores
+
+## Current limitations and unverified behavior
+
+An authenticated end-to-end Fork could not be exercised during development. Native button matching and destination capture therefore still need validation against JanitorAI's live authenticated interface.
+
+The private Fork endpoint, response schema, exact failure behavior, new-tab behavior, and completeness of copied messages remain unverified. The beta cannot distinguish a confirmed server failure from an outcome it did not observe, and no volunteer findings or recurring failure patterns have yet been established by this repository.
+
+This project is distributed through GitHub only. There is no Greasy Fork listing.
+
+## License
+
+[MIT](LICENSE)
